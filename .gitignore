@@ -1,0 +1,9 @@
+# Exts
+
+# Dirs
+/vendor
+/.sandbox
+
+# Files
+/composer.lock
+.phpunit.result.cache

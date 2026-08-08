@@ -1,0 +1,15 @@
+{
+    "name": "inilim/parallel",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Inilim\\Parallel\\": "src/"
+        },
+        "files": []
+    },
+    "require": {
+        "php-zts": ">=8.4",
+        "ext-parallel": ">=1.2.15",
+        "inilim/tools": "^0.0.20260706"
+    }
+}

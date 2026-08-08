@@ -1,0 +1,9 @@
+# Exts
+
+# Dirs
+/.git*          export-ignore
+
+# Files
+/phpunit.xml            export-ignore
+/phpstan.neon           export-ignore
+/README.md              export-ignore
