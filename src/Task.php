@@ -36,12 +36,18 @@ final class Task
         }
     }
 
+    /**
+     * @param callable(mixed) $callback
+     */
     function setHandler(callable $callback): self
     {
         $this->handler = \Closure::fromCallable($callback);
         return $this;
     }
 
+    /**
+     * @param callable(\Throwable) $callback
+     */
     function setHandlerError(callable $callback): self
     {
         $this->handlerError = \Closure::fromCallable($callback);

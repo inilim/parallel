@@ -42,6 +42,9 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         return $this;
     }
 
+    /**
+     * @param callable(mixed) $callback
+     */
     function setHandler(callable $callback): self
     {
         $callback = \Closure::fromCallable($callback);
