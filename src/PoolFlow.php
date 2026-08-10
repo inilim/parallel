@@ -19,6 +19,7 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
      * @var \Generator<int,Flow>
      */
     protected \Generator $iterator;
+    protected \Closure $eachCycleCallback;
 
     function __construct(
         protected int $count,
@@ -32,6 +33,15 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         $this->iterator = $this->infiniteIterator();
     }
 
+    /**
+     * @param callable(PoolFlow):void $callback
+     */
+    function setEachCycleCallback(callable $callback): self
+    {
+        $this->eachCycleCallback = \Closure::fromCallable($callback);
+        return $this;
+    }
+
     function setHandler(callable $callback): self
     {
         $callback = \Closure::fromCallable($callback);
@@ -41,6 +51,9 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         return $this;
     }
 
+    /**
+     * @param callable(\Throwable) $callback
+     */
     function setHandlerError(callable $callback): self
     {
         $callback = \Closure::fromCallable($callback);
@@ -125,8 +138,14 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
     function execAndGetTask(\Closure $callback, mixed ...$args): Task
     {
         $flow = $this->iterator->current();
+        $idx = $this->iterator->key();
         $task = $flow->execAndGetTask($callback, ...$args);
         $this->iterator->next();
+
+        if (($idx + 1) === $this->count && isset($this->eachCycleCallback)) {
+            ($this->eachCycleCallback)($this);
+        }
+
         return $task;
     }
 
