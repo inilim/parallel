@@ -15,6 +15,7 @@ final class Task
     protected mixed $value;
     protected ?Future $future;
     protected \Closure $handler;
+    protected \Closure $handlerError;
     protected \Throwable $exception;
 
     function __construct(
@@ -24,16 +25,26 @@ final class Task
          */
         protected \WeakReference $flow,
         ?\Closure $handler = null,
+        ?\Closure $handlerError = null,
     ) {
         $this->future = $future;
         if ($handler) {
             $this->handler = $handler;
+        }
+        if ($handlerError) {
+            $this->handlerError = $handlerError;
         }
     }
 
     function setHandler(callable $callback): self
     {
         $this->handler = \Closure::fromCallable($callback);
+        return $this;
+    }
+
+    function setHandlerError(callable $callback): self
+    {
+        $this->handlerError = \Closure::fromCallable($callback);
         return $this;
     }
 
@@ -132,6 +143,9 @@ final class Task
             $this->exception = $e;
             $value = null;
             $hasValue = false;
+            if (isset($this->handlerError)) {
+                ($this->handlerError)($e);
+            }
         }
         $this->future = null;
         $this->value = $value;

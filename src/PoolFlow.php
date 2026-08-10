@@ -41,6 +41,15 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         return $this;
     }
 
+    function setHandlerError(callable $callback): self
+    {
+        $callback = \Closure::fromCallable($callback);
+        foreach ($this->flows as $flow) {
+            $flow->setHandlerError($callback);
+        }
+        return $this;
+    }
+
     function wait(int $ms = 10): self
     {
         Assert::positiveInteger($ms);

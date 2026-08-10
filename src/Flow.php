@@ -22,6 +22,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     protected bool $firstRun = false;
     protected Future $futureBoot;
     protected \Closure $handler;
+    protected \Closure $handlerError;
     /**
      * @var \WeakReference<Flow>
      */
@@ -53,6 +54,12 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     function setHandler(callable $callback): self
     {
         $this->handler = \Closure::fromCallable($callback);
+        return $this;
+    }
+
+    function setHandlerError(callable $callback): self
+    {
+        $this->handlerError = \Closure::fromCallable($callback);
         return $this;
     }
 
@@ -180,7 +187,8 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         $task = new Task(
             $future,
             $this->flow,
-            isset($this->handler) ? $this->handler : null
+            isset($this->handler) ? $this->handler : null,
+            isset($this->handlerError) ? $this->handlerError : null,
         );
         $this->tasks[] = $task;
         return $task;
