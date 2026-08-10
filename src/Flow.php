@@ -202,10 +202,11 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
 
     function __destruct()
     {
-        if (isset($this->handler)) {
+        if (isset($this->handler) || isset($this->handlerError)) {
             $this->waitNative();
         }
         try {
+            // INFO close ожидает выполнение всех задач
             $this->runtime->close();
         } catch (\Throwable) {
         }
