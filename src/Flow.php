@@ -21,11 +21,18 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     protected array $tasks = [];
     protected bool $firstRun = false;
     protected Future $futureBoot;
+    protected \Closure $handler;
+    /**
+     * @var \WeakReference<Flow>
+     */
+    protected \WeakReference $flow;
+
     protected static ?\Closure $wrapTask = null;
 
     function __construct()
     {
         $this->runtime = new Runtime;
+        $this->flow = \WeakReference::create($this);
         self::$wrapTask ??= static function (\Closure $task, array $args): mixed {
             return $task(...$args);
 
@@ -41,6 +48,12 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
             //     $fn($value);
             // }
         };
+    }
+
+    function setHandler(callable $callback): self
+    {
+        $this->handler = \Closure::fromCallable($callback);
+        return $this;
     }
 
     /**
@@ -72,7 +85,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     function getCompletedTasksAsIterator(): \Generator
     {
         foreach ($this->tasks as $task) {
-            if ($task->done()) {
+            if ($task->completed()) {
                 yield $task;
             }
         }
@@ -97,7 +110,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         }
         $tasks = &$this->tasks;
         foreach ($tasks as $idx => $task) {
-            if ($task->done()) {
+            if ($task->completed()) {
                 unset($tasks[$idx]);
             }
         }
@@ -143,14 +156,14 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         return $this;
     }
 
-    function done(): bool
+    function completed(): bool
     {
         if ([] === $this->tasks) {
             return true;
         }
 
         foreach ($this->tasks as $task) {
-            if (false === $task->done()) {
+            if (false === $task->completed()) {
                 return false;
             }
         }
@@ -164,7 +177,11 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
             $this->firstRun = true;
         }
         $future = $this->runtime->run(self::$wrapTask, [$callback, $args]);
-        $task = new Task($future, $this);
+        $task = new Task(
+            $future,
+            $this->flow,
+            isset($this->handler) ? $this->handler : null
+        );
         $this->tasks[] = $task;
         return $task;
     }
@@ -177,6 +194,9 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
 
     function __destruct()
     {
+        if (isset($this->handler)) {
+            $this->waitNative();
+        }
         try {
             $this->runtime->close();
         } catch (\Throwable) {

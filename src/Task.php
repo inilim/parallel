@@ -14,13 +14,32 @@ final class Task
 {
     protected mixed $value;
     protected ?Future $future;
+    protected \Closure $handler;
     protected \Throwable $exception;
 
     function __construct(
         Future $future,
-        public readonly Flow $flow,
+        /**
+         * @var \WeakReference<Flow>
+         */
+        protected \WeakReference $flow,
+        ?\Closure $handler = null,
     ) {
         $this->future = $future;
+        if ($handler) {
+            $this->handler = $handler;
+        }
+    }
+
+    function setHandler(callable $callback): self
+    {
+        $this->handler = \Closure::fromCallable($callback);
+        return $this;
+    }
+
+    function flow(): ?Flow
+    {
+        return $this->flow->get();
     }
 
     function done(): bool
@@ -106,13 +125,18 @@ final class Task
 
     protected function extractValue(): void
     {
+        $hasValue = true;
         try {
             $value = $this->future->value();
         } catch (\Throwable $e) {
             $this->exception = $e;
             $value = null;
+            $hasValue = false;
         }
         $this->future = null;
         $this->value = $value;
+        if ($hasValue && isset($this->handler)) {
+            ($this->handler)($value);
+        }
     }
 }
