@@ -29,7 +29,7 @@ final class Task
     }
 
     /**
-     * @param ?callable(mixed) $callback
+     * @param ?callable(mixed):void $callback
      */
     function setHandler(?callable $callback): self
     {
@@ -41,7 +41,7 @@ final class Task
     }
 
     /**
-     * @param ?callable(\Throwable) $callback
+     * @param ?callable(\Throwable):void $callback
      */
     function setHandlerError(?callable $callback): self
     {

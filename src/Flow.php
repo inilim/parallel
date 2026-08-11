@@ -23,6 +23,12 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     protected Future $futureBoot;
     protected ?\Closure $handler = null;
     protected ?\Closure $handlerError = null;
+
+    /**
+     * @var ?array{0:\Closure,1:int}
+     */
+    protected ?array $handlerCountTask = null;
+
     /**
      * @var \WeakReference<Flow>
      */
@@ -52,7 +58,21 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     }
 
     /**
-     * @param ?callable(mixed) $callback
+     * @param ?callable(Flow,int):void $callback
+     */
+    function setHandlerCountTask(?callable $callback, int $count = 10): self
+    {
+        if (null !== $callback) {
+            Assert::positiveInteger($count);
+            $this->handlerCountTask = [\Closure::fromCallable($callback), $count];
+        } else {
+            $this->handlerCountTask = null;
+        }
+        return $this;
+    }
+
+    /**
+     * @param ?callable(mixed):void $callback
      */
     function setHandler(?callable $callback): self
     {
@@ -64,7 +84,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     }
 
     /**
-     * @param ?callable(\Throwable) $callback
+     * @param ?callable(\Throwable):void $callback
      */
     function setHandlerError(?callable $callback): self
     {
@@ -203,6 +223,13 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
             $this->handlerError,
         );
         $this->tasks[] = $task;
+
+        // handlerCountTask start
+        if (null !== $this->handlerCountTask && ($count = \count($this->tasks)) >= $this->handlerCountTask[1]) {
+            $this->handlerCountTask[0]($this, $count);
+        }
+        // handlerCountTask end
+
         return $task;
     }
 
