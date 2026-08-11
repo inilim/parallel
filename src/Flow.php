@@ -138,10 +138,6 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         return \iterator_to_array($this->getCompletedTasksAsIterator());
     }
 
-    /**
-     * Удаляет из списка задач те, у которых результат уже извлечён (Future === null).
-     * Совершенно безопасно, т.к. потоки завершены и ресурсы освобождены.
-     */
     function removeCompletedTasks(): self
     {
         if ([] === $this->tasks) {
