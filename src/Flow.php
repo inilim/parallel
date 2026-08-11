@@ -199,8 +199,8 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         $task = new Task(
             $future,
             $this->flow,
-            null !== $this->handler ? $this->handler : null,
-            null !== $this->handlerError ? $this->handlerError : null,
+            $this->handler,
+            $this->handlerError,
         );
         $this->tasks[] = $task;
         return $task;
