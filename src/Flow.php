@@ -21,8 +21,8 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     protected array $tasks = [];
     protected bool $firstRun = false;
     protected Future $futureBoot;
-    protected \Closure $handler;
-    protected \Closure $handlerError;
+    protected ?\Closure $handler = null;
+    protected ?\Closure $handlerError = null;
     /**
      * @var \WeakReference<Flow>
      */
@@ -52,20 +52,26 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     }
 
     /**
-     * @param callable(mixed) $callback
+     * @param ?callable(mixed) $callback
      */
-    function setHandler(callable $callback): self
+    function setHandler(?callable $callback): self
     {
-        $this->handler = \Closure::fromCallable($callback);
+        if (null !== $callback) {
+            $callback = \Closure::fromCallable($callback);
+        }
+        $this->handler = $callback;
         return $this;
     }
 
     /**
-     * @param callable(\Throwable) $callback
+     * @param ?callable(\Throwable) $callback
      */
-    function setHandlerError(callable $callback): self
+    function setHandlerError(?callable $callback): self
     {
-        $this->handlerError = \Closure::fromCallable($callback);
+        if (null !== $callback) {
+            $callback = \Closure::fromCallable($callback);
+        }
+        $this->handlerError = $callback;
         return $this;
     }
 
@@ -193,8 +199,8 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         $task = new Task(
             $future,
             $this->flow,
-            isset($this->handler) ? $this->handler : null,
-            isset($this->handlerError) ? $this->handlerError : null,
+            null !== $this->handler ? $this->handler : null,
+            null !== $this->handlerError ? $this->handlerError : null,
         );
         $this->tasks[] = $task;
         return $task;
@@ -208,7 +214,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
 
     function __destruct()
     {
-        if (isset($this->handler) || isset($this->handlerError)) {
+        if (null !== $this->handler || null !== $this->handlerError) {
             $this->waitNative();
         }
         try {

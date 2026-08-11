@@ -14,8 +14,6 @@ final class Task
 {
     protected mixed $value;
     protected ?Future $future;
-    protected \Closure $handler;
-    protected \Closure $handlerError;
     protected \Throwable $exception;
 
     function __construct(
@@ -24,33 +22,33 @@ final class Task
          * @var \WeakReference<Flow>
          */
         protected \WeakReference $flow,
-        ?\Closure $handler = null,
-        ?\Closure $handlerError = null,
+        protected ?\Closure $handler = null,
+        protected ?\Closure $handlerError = null,
     ) {
         $this->future = $future;
-        if ($handler) {
-            $this->handler = $handler;
-        }
-        if ($handlerError) {
-            $this->handlerError = $handlerError;
-        }
     }
 
     /**
-     * @param callable(mixed) $callback
+     * @param ?callable(mixed) $callback
      */
-    function setHandler(callable $callback): self
+    function setHandler(?callable $callback): self
     {
-        $this->handler = \Closure::fromCallable($callback);
+        if (null !== $callback) {
+            $callback = \Closure::fromCallable($callback);
+        }
+        $this->handler = $callback;
         return $this;
     }
 
     /**
-     * @param callable(\Throwable) $callback
+     * @param ?callable(\Throwable) $callback
      */
-    function setHandlerError(callable $callback): self
+    function setHandlerError(?callable $callback): self
     {
-        $this->handlerError = \Closure::fromCallable($callback);
+        if (null !== $callback) {
+            $callback = \Closure::fromCallable($callback);
+        }
+        $this->handlerError = $callback;
         return $this;
     }
 
@@ -149,13 +147,13 @@ final class Task
             $this->exception = $e;
             $value = null;
             $hasValue = false;
-            if (isset($this->handlerError)) {
+            if (null !== $this->handlerError) {
                 ($this->handlerError)($e);
             }
         }
         $this->future = null;
         $this->value = $value;
-        if ($hasValue && isset($this->handler)) {
+        if ($hasValue && null !== $this->handler) {
             ($this->handler)($value);
         }
     }

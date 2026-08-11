@@ -19,7 +19,7 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
      * @var \Generator<int,Flow>
      */
     protected \Generator $iterator;
-    protected \Closure $eachCycleCallback;
+    protected ?\Closure $eachCycleCallback = null;
 
     function __construct(
         protected int $count,
@@ -34,20 +34,22 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
     }
 
     /**
-     * @param callable(PoolFlow):void $callback
+     * @param ?callable(PoolFlow):void $callback
      */
-    function setEachCycleCallback(callable $callback): self
+    function setEachCycleCallback(?callable $callback): self
     {
-        $this->eachCycleCallback = \Closure::fromCallable($callback);
+        if (null !== $callback) {
+            $callback = \Closure::fromCallable($callback);
+        }
+        $this->eachCycleCallback = $callback;
         return $this;
     }
 
     /**
-     * @param callable(mixed) $callback
+     * @param ?callable(mixed) $callback
      */
-    function setHandler(callable $callback): self
+    function setHandler(?callable $callback): self
     {
-        $callback = \Closure::fromCallable($callback);
         foreach ($this->flows as $flow) {
             $flow->setHandler($callback);
         }
@@ -55,11 +57,10 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
     }
 
     /**
-     * @param callable(\Throwable) $callback
+     * @param ?callable(\Throwable) $callback
      */
-    function setHandlerError(callable $callback): self
+    function setHandlerError(?callable $callback): self
     {
-        $callback = \Closure::fromCallable($callback);
         foreach ($this->flows as $flow) {
             $flow->setHandlerError($callback);
         }
@@ -145,7 +146,7 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         $task = $flow->execAndGetTask($callback, ...$args);
         $this->iterator->next();
 
-        if (($idx + 1) === $this->count && isset($this->eachCycleCallback)) {
+        if (($idx + 1) === $this->count && null !== $this->eachCycleCallback) {
             ($this->eachCycleCallback)($this);
         }
 
