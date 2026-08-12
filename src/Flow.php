@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Inilim\Parallel;
 
+use Inilim\Parallel\Exception\TaskNotCompletedException;
 use Inilim\Parallel\Task;
 use Inilim\Tool\Assert;
 use Inilim\Tool\ID;
@@ -21,6 +22,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
      */
     protected array $tasks = [];
     protected bool $firstRun = false;
+    protected bool $boot = false;
     protected Future $futureBoot;
     protected ?\Closure $handler = null;
     protected ?\Closure $handlerError = null;
@@ -120,6 +122,8 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     }
 
     /**
+     * @trigger handler
+     * @trigger handlerError
      * @return \Generator<int,Task>
      */
     function getCompletedTasksAsIterator(): \Generator
@@ -132,6 +136,8 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     }
 
     /**
+     * @trigger handler
+     * @trigger handlerError
      * @return Task[]
      */
     function getCompletedTasksAsArray(): array
@@ -139,6 +145,10 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         return \iterator_to_array($this->getCompletedTasksAsIterator());
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function removeCompletedTasks(): self
     {
         if ([] === $this->tasks) {
@@ -153,6 +163,10 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         return $this;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function wait(int $ms = 10): self
     {
         Assert::positiveInteger($ms);
@@ -168,6 +182,10 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         return $this;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function waitNative(): self
     {
         if ([] === $this->tasks) {
@@ -183,14 +201,19 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
 
     function boot(\Closure $boot): self
     {
-        if (true === $this->firstRun) {
+        if (true === $this->firstRun || true === $this->boot) {
             throw new \LogicException;
         }
 
+        $this->boot = true;
         $this->futureBoot = $this->runtime->run($boot);
         return $this;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function completed(): bool
     {
         if ([] === $this->tasks) {
@@ -206,12 +229,24 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         return true;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     * @throws TaskNotCompletedException
+     */
     function removeByTask(Task $task): self
     {
-        unset($this->tasks[$task->key]);
+        if ($task->completed()) {
+            unset($this->tasks[$task->key]);
+        } else {
+            throw new TaskNotCompletedException;
+        }
         return $this;
     }
 
+    /**
+     * @trigger handlerCountTask
+     */
     function execAndGetTask(\Closure $callback, mixed ...$args): Task
     {
         if (false === $this->firstRun) {
@@ -236,12 +271,19 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         return $task;
     }
 
+    /**
+     * @trigger handlerCountTask
+     */
     function exec(\Closure $callback, mixed ...$args): self
     {
         $this->execAndGetTask($callback, ...$args);
         return $this;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function __destruct()
     {
         if (null !== $this->handler || null !== $this->handlerError) {

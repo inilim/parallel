@@ -58,11 +58,15 @@ final class Task
         return $this->flow->get();
     }
 
-    function done(): bool
+    function doneNative(): bool
     {
-        return $this->completed();
+        return $this->future ? $this->future->done() : true;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function completed(): bool
     {
         if (null === $this->future) {
@@ -77,7 +81,10 @@ final class Task
     }
 
     /**
+     * @trigger handler
+     * @trigger handlerError
      * @throws \Throwable
+     * @throws TaskNotCompletedException
      */
     function value(): mixed
     {
@@ -99,12 +106,11 @@ final class Task
         throw new TaskNotCompletedException;
     }
 
+    /**
+     * call after completed task, else always false
+     */
     function hasError(): bool
     {
-        if (!$this->completed()) {
-            return false;
-        }
-
         return isset($this->exception);
     }
 
@@ -114,6 +120,8 @@ final class Task
     }
 
     /**
+     * @trigger handler
+     * @trigger handlerError
      * @throws TaskNotCompletedException
      */
     function removeFromFlow(): self
@@ -125,6 +133,10 @@ final class Task
         return $this;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function wait(int $ms = 10): self
     {
         Assert::positiveInteger($ms);
@@ -142,6 +154,10 @@ final class Task
         return $this;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function waitNative(): self
     {
         if (null === $this->future) {
@@ -151,6 +167,10 @@ final class Task
         return $this;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     protected function extractValue(): void
     {
         $hasValue = true;

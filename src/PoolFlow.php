@@ -14,7 +14,6 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
      * @var Flow[]
      */
     protected array $flows = [];
-    protected bool $firstRun = false;
     /**
      * @var \Generator<int,Flow>
      */
@@ -67,6 +66,10 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         return $this;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function wait(int $ms = 10): self
     {
         Assert::positiveInteger($ms);
@@ -76,6 +79,10 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         return $this;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function waitNative(): self
     {
         foreach ($this->flows as $flow) {
@@ -118,6 +125,10 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         return $this->count;
     }
 
+    /**
+     * @trigger handler
+     * @trigger handlerError
+     */
     function removeCompletedTasks(): self
     {
         foreach ($this->flows as $flow) {
@@ -128,10 +139,6 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
 
     function boot(\Closure $boot): self
     {
-        if (true === $this->firstRun) {
-            throw new \LogicException;
-        }
-
         foreach ($this->flows as $flow) {
             $flow->boot($boot);
         }
@@ -139,6 +146,10 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         return $this;
     }
 
+    /**
+     * @trigger handlerCountTask
+     * @trigger eachCycleCallback
+     */
     function execAndGetTask(\Closure $callback, mixed ...$args): Task
     {
         $flow = $this->iterator->current();
@@ -153,6 +164,10 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
         return $task;
     }
 
+    /**
+     * @trigger handlerCountTask
+     * @trigger eachCycleCallback
+     */
     function exec(\Closure $callback, mixed ...$args): self
     {
         $this->execAndGetTask($callback, ...$args);
