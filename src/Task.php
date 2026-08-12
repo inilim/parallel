@@ -17,6 +17,7 @@ final class Task
     protected \Throwable $exception;
 
     function __construct(
+        public readonly string $key,
         Future $future,
         /**
          * @var \WeakReference<Flow>
@@ -29,7 +30,7 @@ final class Task
     }
 
     /**
-     * @param ?callable(mixed):void $callback
+     * @param ?callable(mixed,Task):void $callback
      */
     function setHandler(?callable $callback): self
     {
@@ -41,7 +42,7 @@ final class Task
     }
 
     /**
-     * @param ?callable(\Throwable):void $callback
+     * @param ?callable(\Throwable,Task):void $callback
      */
     function setHandlerError(?callable $callback): self
     {
@@ -112,6 +113,18 @@ final class Task
         return isset($this->exception) ? $this->exception : null;
     }
 
+    /**
+     * @throws TaskNotCompletedException
+     */
+    function removeFromFlow(): self
+    {
+        if (false === $this->completed()) {
+            throw new TaskNotCompletedException;
+        }
+        $this->flow()?->removeByTask($this);
+        return $this;
+    }
+
     function wait(int $ms = 10): self
     {
         Assert::positiveInteger($ms);
@@ -147,14 +160,14 @@ final class Task
             $this->exception = $e;
             $value = null;
             $hasValue = false;
-            if (null !== $this->handlerError) {
-                ($this->handlerError)($e);
-            }
         }
         $this->future = null;
         $this->value = $value;
-        if ($hasValue && null !== $this->handler) {
-            ($this->handler)($value);
+
+        if (false === $hasValue && null !== $this->handlerError) {
+            ($this->handlerError)($this->exception, $this);
+        } elseif (true === $hasValue && null !== $this->handler) {
+            ($this->handler)($value, $this);
         }
     }
 }

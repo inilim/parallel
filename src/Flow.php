@@ -6,6 +6,7 @@ namespace Inilim\Parallel;
 
 use Inilim\Parallel\Task;
 use Inilim\Tool\Assert;
+use Inilim\Tool\ID;
 use parallel\Future;
 use parallel\Runtime;
 
@@ -16,7 +17,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
 {
     protected Runtime $runtime;
     /**
-     * @var Task[]
+     * @var array<string,Task>
      */
     protected array $tasks = [];
     protected bool $firstRun = false;
@@ -72,7 +73,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     }
 
     /**
-     * @param ?callable(mixed):void $callback
+     * @param ?callable(mixed,Task):void $callback
      */
     function setHandler(?callable $callback): self
     {
@@ -84,7 +85,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
     }
 
     /**
-     * @param ?callable(\Throwable):void $callback
+     * @param ?callable(\Throwable,Task):void $callback
      */
     function setHandlerError(?callable $callback): self
     {
@@ -115,7 +116,7 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
      */
     function getTasks(): array
     {
-        return $this->tasks;
+        return \array_values($this->tasks);
     }
 
     /**
@@ -144,12 +145,11 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
             return $this;
         }
         $tasks = &$this->tasks;
-        foreach ($tasks as $idx => $task) {
+        foreach ($tasks as $key => $task) {
             if ($task->completed()) {
-                unset($tasks[$idx]);
+                unset($tasks[$key]);
             }
         }
-        $tasks = \array_values($tasks);
         return $this;
     }
 
@@ -206,6 +206,12 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         return true;
     }
 
+    function removeByTask(Task $task): self
+    {
+        unset($this->tasks[$task->key]);
+        return $this;
+    }
+
     function execAndGetTask(\Closure $callback, mixed ...$args): Task
     {
         if (false === $this->firstRun) {
@@ -213,12 +219,13 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         }
         $future = $this->runtime->run(self::$wrapTask, [$callback, $args]);
         $task = new Task(
+            $key = ID::uuidv4(),
             $future,
             $this->flow,
             $this->handler,
             $this->handlerError,
         );
-        $this->tasks[] = $task;
+        $this->tasks[$key] = $task;
 
         // handlerCountTask start
         if (null !== $this->handlerCountTask && ($count = \count($this->tasks)) >= $this->handlerCountTask[1]) {

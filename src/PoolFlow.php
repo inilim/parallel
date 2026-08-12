@@ -46,7 +46,7 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
     }
 
     /**
-     * @param ?callable(mixed):void $callback
+     * @param ?callable(mixed,Task):void $callback
      */
     function setHandler(?callable $callback): self
     {
@@ -57,7 +57,7 @@ class PoolFlow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate,
     }
 
     /**
-     * @param ?callable(\Throwable):void $callback
+     * @param ?callable(\Throwable,Task):void $callback
      */
     function setHandlerError(?callable $callback): self
     {
