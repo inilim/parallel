@@ -10,7 +10,7 @@
     "require": {
         "php-zts": ">=8.4",
         "ext-parallel": ">=1.2.15",
-        "inilim/tools": "^0.0.20260706"
+        "inilim/tools": "0.0.*"
     },
     "require-dev": {
         "symfony/finder": "^8.1"
