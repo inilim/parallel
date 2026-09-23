@@ -199,14 +199,17 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         return $this;
     }
 
-    function boot(\Closure $boot): self
+    /**
+     */
+    function boot(\Closure $boot, mixed ...$args): self
     {
         if (true === $this->firstRun || true === $this->boot) {
             throw new \LogicException;
         }
 
         $this->boot = true;
-        $this->futureBoot = $this->runtime->run($boot);
+        [] === $args && $args = null;
+        $this->futureBoot = $this->runtime->run($boot, $args);
         return $this;
     }
 
