@@ -208,8 +208,9 @@ class Flow implements \Inilim\Parallel\ExecuteInterface, \IteratorAggregate, \Co
         }
 
         $this->boot = true;
-        [] === $args && $args = null;
-        $this->futureBoot = $this->runtime->run($boot, $args);
+        $this->futureBoot = [] === $args
+            ? $this->runtime->run($boot)
+            : $this->runtime->run($boot, $args);
         return $this;
     }
 
