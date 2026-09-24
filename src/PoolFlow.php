@@ -6,6 +6,11 @@ namespace Inilim\Parallel;
 
 use Inilim\Parallel\Task;
 
+/**
+ * Старатегия выдачи задач по очереди, без системы ожидания.
+ * Реализуйте систему ожидания, иначе будет переполнение стека задач.
+ * Реализуйте систему очистки стека выполненных задач
+ */
 class PoolFlow extends \Inilim\Parallel\BasePoolFlow
 {
     /**
